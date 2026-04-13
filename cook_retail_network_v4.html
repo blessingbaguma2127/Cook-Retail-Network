@@ -1,0 +1,1605 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Cook Retail Network — Live Control Center</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+<!-- ═══ DESIGN SYSTEM (unchanged from v3) ═══ -->
+<style>
+:root {
+  --bg:#000;--bg1:#0a0a0a;--bg2:#111;--bg3:#1a1a1a;--bg4:#222;
+  --border:rgba(255,255,255,0.08);--border2:rgba(255,255,255,0.14);
+  --text:#fff;--muted:rgba(255,255,255,0.4);--dim:rgba(255,255,255,0.2);
+  --te:#06c167;--sr:#fff;--jr:#a3e635;--warn:#f59e0b;--danger:#ef4444;--blue:#3b82f6;
+  --z1:#06c167;--z2:#3b82f6;--z3:#f59e0b;--z4:#a855f7;--z5:#ef4444;--z6:#06b6d4;--z7:#f97316;
+  --font:'Syne',sans-serif;--mono:'IBM Plex Mono',monospace;
+  --nav:52px;--side:300px;--ctrl:320px;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;overflow:hidden;font-family:var(--font);background:var(--bg);color:var(--text);}
+
+/* ── TOP NAV (unchanged) ── */
+#nav{position:fixed;top:0;left:0;right:0;height:var(--nav);background:var(--bg1);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 16px;gap:10px;z-index:2000;}
+.nav-logo{width:34px;height:34px;background:var(--te);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:800;color:#000;flex-shrink:0;}
+.nav-title{font-size:14px;font-weight:700;letter-spacing:-0.3px;}
+.nav-sub{font-size:10px;color:var(--muted);font-family:var(--mono);}
+.nav-sp{flex:1;}
+.nav-tabs{display:flex;gap:1px;background:var(--bg3);border-radius:8px;padding:3px;}
+.ntab{padding:5px 13px;border-radius:6px;font-size:11.5px;font-weight:700;cursor:pointer;color:var(--muted);border:none;background:none;font-family:var(--font);transition:all .15s;letter-spacing:.2px;}
+.ntab:hover{color:var(--text);}
+.ntab.active{background:var(--bg1);color:var(--text);border:1px solid var(--border);}
+.live-dot{display:flex;align-items:center;gap:6px;font-size:11px;font-family:var(--mono);color:var(--te);padding:5px 12px;border:1px solid rgba(6,193,103,.25);border-radius:20px;}
+.live-dot::before{content:'';width:7px;height:7px;border-radius:50%;background:var(--te);animation:livePulse 1.5s ease infinite;flex-shrink:0;}
+@keyframes livePulse{0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(6,193,103,.4);}50%{opacity:.6;box-shadow:0 0 0 5px rgba(6,193,103,0);}}
+
+/* ── LAYOUT ── */
+#layout{display:flex;height:100vh;padding-top:var(--nav);}
+
+/* ── LEFT SIDEBAR (unchanged) ── */
+#sidebar{width:var(--side);flex-shrink:0;background:var(--bg1);border-right:1px solid var(--border);overflow-y:auto;display:flex;flex-direction:column;z-index:100;}
+#sidebar::-webkit-scrollbar{width:2px;}
+#sidebar::-webkit-scrollbar-thumb{background:var(--bg4);}
+.sb{padding:14px 16px;border-bottom:1px solid var(--border);}
+.sbt{font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:10px;}
+
+/* ── MAP CHAMBER ── */
+#main{flex:1;position:relative;overflow:hidden;display:flex;}
+
+/* The actual Google Map fills the center */
+#gmap{flex:1;height:100%;min-width:0;}
+
+/* ══════════════════════════════════════════════
+   GOOGLE MAPS SIDE CONTROL PANEL
+   - Lives to the RIGHT of the map canvas
+   - Separate from the existing right-panel
+   ══════════════════════════════════════════════ */
+#map-ctrl{
+  width:var(--ctrl);flex-shrink:0;background:var(--bg1);
+  border-left:1px solid var(--border);overflow-y:auto;
+  display:flex;flex-direction:column;
+  font-family:var(--font);
+}
+#map-ctrl::-webkit-scrollbar{width:2px;}
+#map-ctrl::-webkit-scrollbar-thumb{background:var(--bg4);}
+.ctrl-header{
+  padding:14px 16px 12px;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;gap:8px;
+  background:linear-gradient(135deg,rgba(6,193,103,.08),transparent);
+}
+.ctrl-header-icon{font-size:18px;}
+.ctrl-header-title{font-size:13px;font-weight:800;letter-spacing:-.2px;}
+.ctrl-header-sub{font-size:10px;color:var(--muted);font-family:var(--mono);}
+
+/* Control panel sections */
+.cs{padding:14px 16px;border-bottom:1px solid var(--border);}
+.cs-title{
+  font-size:9px;font-weight:700;letter-spacing:1.4px;text-transform:uppercase;
+  color:var(--muted);margin-bottom:10px;display:flex;align-items:center;gap:6px;
+}
+.cs-title-accent{color:var(--te);}
+
+/* Location list inside ctrl panel */
+.loc-item{
+  display:flex;align-items:center;gap:9px;padding:9px 10px;
+  border-radius:8px;cursor:pointer;transition:all .15s;margin-bottom:3px;
+  border:1px solid transparent;
+}
+.loc-item:hover{background:var(--bg3);border-color:var(--border);}
+.loc-item.active-loc{background:var(--bg3);border-color:rgba(6,193,103,.3);}
+.loc-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;border:2px solid rgba(255,255,255,.2);}
+.loc-info{flex:1;min-width:0;}
+.loc-name{font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.loc-meta{font-size:10px;color:var(--muted);font-family:var(--mono);margin-top:1px;}
+.loc-stock-bar{height:3px;background:var(--bg4);border-radius:2px;margin-top:4px;overflow:hidden;}
+.loc-stock-fill{height:100%;border-radius:2px;transition:width .4s;}
+.loc-actions{display:flex;gap:3px;flex-shrink:0;}
+.la-btn{width:24px;height:24px;border-radius:5px;border:1px solid var(--border);background:none;color:var(--muted);cursor:pointer;font-size:11px;display:flex;align-items:center;justify-content:center;transition:all .15s;}
+.la-btn:hover{background:var(--bg4);color:var(--text);}
+.la-btn.del:hover{background:rgba(239,68,68,.15);color:var(--danger);border-color:rgba(239,68,68,.3);}
+
+/* Status badge */
+.status-badge{
+  font-size:9px;font-weight:700;padding:2px 7px;border-radius:4px;font-family:var(--mono);
+  display:inline-flex;align-items:center;gap:4px;
+}
+.status-badge::before{content:'';width:5px;height:5px;border-radius:50%;}
+.sb-active{background:rgba(6,193,103,.12);color:var(--te);border:1px solid rgba(6,193,103,.2);}
+.sb-active::before{background:var(--te);}
+.sb-inactive{background:rgba(239,68,68,.1);color:var(--danger);border:1px solid rgba(239,68,68,.2);}
+.sb-inactive::before{background:var(--danger);}
+
+/* Form inputs */
+.fi{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:7px;padding:8px 10px;font-size:12px;color:var(--text);font-family:var(--font);outline:none;transition:border .15s;margin-bottom:6px;}
+.fi:focus{border-color:rgba(6,193,103,.5);}
+.fi-row{display:flex;gap:6px;}
+.fi-row .fi{margin-bottom:0;}
+select.fi{appearance:none;}
+.btn-g{background:var(--te);color:#000;border:none;border-radius:7px;padding:8px 14px;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--font);width:100%;transition:all .15s;margin-top:2px;}
+.btn-g:hover{background:#08d97a;}
+.btn-sm{background:none;border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-size:11px;font-weight:600;color:var(--muted);cursor:pointer;font-family:var(--font);transition:all .15s;}
+.btn-sm:hover{border-color:var(--border2);color:var(--text);}
+.btn-danger{background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.25);border-radius:6px;padding:6px 10px;font-size:11px;font-weight:600;color:var(--danger);cursor:pointer;font-family:var(--font);}
+
+/* Stock update row */
+.stock-edit-row{display:flex;align-items:center;gap:6px;margin-bottom:6px;}
+.stock-edit-row label{font-size:10px;color:var(--muted);white-space:nowrap;flex-shrink:0;}
+.stock-num{width:70px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:5px 8px;font-size:11px;color:var(--text);font-family:var(--mono);outline:none;text-align:center;}
+.stock-num:focus{border-color:rgba(6,193,103,.5);}
+
+/* Radius controls */
+.radius-row{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
+.radius-label{font-size:11px;color:var(--muted);flex:1;}
+.radius-badge{font-size:10px;font-family:var(--mono);font-weight:600;padding:2px 8px;border-radius:5px;min-width:52px;text-align:center;}
+.rb-kigali{background:rgba(6,193,103,.12);color:var(--te);border:1px solid rgba(6,193,103,.2);}
+.rb-rural{background:rgba(59,130,246,.12);color:var(--blue);border:1px solid rgba(59,130,246,.2);}
+input[type=range]{width:100%;accent-color:var(--te);height:3px;cursor:pointer;background:var(--bg4);border-radius:2px;-webkit-appearance:none;margin-bottom:12px;}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:var(--te);cursor:pointer;box-shadow:0 0 6px rgba(6,193,103,.5);}
+
+/* Layer toggles */
+.layer-tog{display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border);}
+.layer-tog:last-child{border:none;}
+.layer-tog-label{font-size:11.5px;font-weight:600;}
+.tog-sw{width:32px;height:18px;border-radius:9px;position:relative;cursor:pointer;transition:background .2s;}
+.tog-sw.on{background:var(--te);}
+.tog-sw.off{background:var(--bg4);}
+.tog-sw::after{content:'';position:absolute;top:2px;width:14px;height:14px;border-radius:50%;background:white;transition:left .2s;box-shadow:0 1px 3px rgba(0,0,0,.3);}
+.tog-sw.on::after{left:16px;}
+.tog-sw.off::after{left:2px;}
+
+/* Stock color legend */
+.sclg{display:flex;align-items:center;gap:7px;margin-bottom:5px;font-size:11px;color:var(--muted);}
+.sclg-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+
+/* Edit modal */
+#edit-modal{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:5000;display:none;align-items:center;justify-content:center;}
+#edit-modal.open{display:flex;}
+#edit-box{background:var(--bg2);border:1px solid var(--border2);border-radius:14px;width:400px;padding:24px;box-shadow:0 16px 64px rgba(0,0,0,.7);}
+.em-title{font-size:16px;font-weight:800;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;}
+.em-close{cursor:pointer;color:var(--muted);font-size:18px;}
+
+/* Toast (unchanged) */
+#toast-container{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:9999;pointer-events:none;}
+.toast{background:var(--bg2);border:1px solid var(--border2);border-radius:10px;padding:10px 18px;font-size:12px;font-weight:600;color:var(--text);margin-bottom:8px;box-shadow:0 8px 32px rgba(0,0,0,.6);animation:toastIn .25s ease,toastOut .3s ease 2.5s forwards;display:flex;align-items:center;gap:8px;font-family:var(--font);}
+@keyframes toastIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+@keyframes toastOut{to{opacity:0;transform:translateY(-8px)}}
+
+/* ── PAGES (unchanged from v3) ── */
+.page{display:none;height:100%;overflow-y:auto;padding:24px;width:100%;}
+.page.active{display:block;}
+.page-title{font-size:22px;font-weight:800;margin-bottom:4px;letter-spacing:-.5px;}
+.page-sub{font-size:12px;color:var(--muted);margin-bottom:20px;}
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:18px;margin-bottom:14px;}
+.card-title{font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:12px;}
+
+/* Stock page */
+.stock-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;}
+.stock-card{background:var(--bg2);border:1px solid var(--border);border-radius:11px;padding:15px;transition:border .2s;}
+.stock-card:hover{border-color:var(--border2);}
+.sc-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;}
+.sc-name{font-size:13px;font-weight:800;}
+.sc-pct{font-size:11px;font-family:var(--mono);font-weight:700;}
+.sc-bar{height:5px;background:var(--bg4);border-radius:3px;overflow:hidden;margin:8px 0;}
+.sc-bar-fill{height:100%;border-radius:3px;transition:width .5s;}
+.sc-nums{display:flex;justify-content:space-between;font-size:10.5px;color:var(--muted);}
+.sc-editable{cursor:pointer;border-bottom:1px dashed var(--border2);}
+.sc-editable:focus{outline:none;border-bottom-color:var(--te);}
+
+/* Sales */
+.dist-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;margin-bottom:18px;}
+.dist-card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:14px;}
+.dist-name{font-size:12px;font-weight:700;margin-bottom:2px;}
+.dist-rev{font-size:19px;font-weight:800;font-family:var(--mono);color:var(--te);}
+.bar-chart{display:flex;align-items:flex-end;gap:6px;height:100px;padding:0 4px;}
+.bc-wrap{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;}
+.bc-bar{width:100%;border-radius:3px 3px 0 0;min-height:3px;}
+.bc-lbl{font-size:9px;color:var(--muted);font-family:var(--mono);}
+
+/* Retailers */
+.ret-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px;}
+.ret-card{background:var(--bg2);border:1px solid var(--border);border-radius:11px;padding:14px;cursor:pointer;transition:all .15s;position:relative;}
+.ret-card:hover{border-color:var(--border2);transform:translateY(-1px);}
+.ret-type{font-size:9px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;margin-bottom:4px;}
+.ret-name{font-size:13px;font-weight:800;margin-bottom:8px;}
+
+/* Insights */
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:18px;}
+.kpi-card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:14px;}
+.kpi-val{font-size:28px;font-weight:800;font-family:var(--mono);}
+.kpi-lbl{font-size:10.5px;color:var(--muted);margin-top:3px;}
+.ins-card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:14px 16px;border-left:3px solid;margin-bottom:8px;}
+.ins-type{font-size:9px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;margin-bottom:4px;}
+.ins-text{font-size:12px;color:rgba(255,255,255,.7);line-height:1.5;}
+
+/* Settings */
+.settings-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.fg{margin-bottom:12px;}
+.fg label{font-size:10px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:4px;}
+.form-input{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:7px;padding:8px 10px;font-size:12px;color:var(--text);font-family:var(--font);outline:none;transition:border .15s;margin-bottom:6px;}
+.form-input:focus{border-color:rgba(6,193,103,.5);}
+.btn-primary{background:var(--te);color:#000;border:none;border-radius:7px;padding:9px 16px;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--font);width:100%;transition:all .15s;}
+.btn-primary:hover{background:#08d97a;}
+.btn-ghost{background:none;color:var(--muted);border:1px solid var(--border);border-radius:7px;padding:7px 12px;font-size:11px;font-weight:600;cursor:pointer;font-family:var(--font);transition:all .15s;}
+.btn-ghost:hover{border-color:var(--border2);color:var(--text);}
+.btn-red{background:rgba(239,68,68,.15);color:#f87171;border:1px solid rgba(239,68,68,.3);border-radius:7px;padding:8px 14px;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--font);margin-bottom:6px;width:100%;}
+table{width:100%;border-collapse:collapse;font-size:12px;}
+th{text-align:left;padding:9px 12px;font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--muted);border-bottom:1px solid var(--border);}
+td{padding:9px 12px;border-bottom:1px solid rgba(255,255,255,.03);color:rgba(255,255,255,.8);}
+td[contenteditable=true]:focus{outline:1px solid var(--te);background:rgba(6,193,103,.05);border-radius:3px;}
+
+/* Stats row for sidebar */
+.stats-row{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:4px;}
+.stat-mini{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px 12px;}
+.stat-val{font-size:20px;font-weight:800;line-height:1;font-family:var(--mono);}
+.stat-lbl{font-size:9.5px;color:var(--muted);margin-top:2px;font-weight:600;letter-spacing:.3px;}
+
+/* Shop list sidebar */
+.shop-item{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:8px;cursor:pointer;transition:all .15s;margin-bottom:3px;border:1px solid transparent;}
+.shop-item:hover{background:var(--bg3);}
+.shop-item.selected{background:var(--bg3);border-color:var(--border2);}
+.shop-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+.shop-name{font-size:12px;font-weight:700;flex:1;}
+.shop-meta{font-size:10px;color:var(--muted);font-family:var(--mono);}
+.shop-stock-bar{height:3px;background:var(--bg4);border-radius:2px;margin-top:4px;overflow:hidden;}
+.shop-stock-fill{height:100%;border-radius:2px;transition:width .4s;}
+
+/* Google Maps specific overrides */
+#gmap .gm-style{font-family:var(--font)!important;}
+.gm-style .gm-style-iw-c{background:var(--bg2)!important;border:1px solid var(--border2)!important;border-radius:12px!important;box-shadow:0 8px 32px rgba(0,0,0,.7)!important;padding:0!important;}
+.gm-style .gm-style-iw-d{overflow:hidden!important;padding:0!important;}
+.gm-style .gm-style-iw-t::after{background:var(--bg2)!important;}
+.gm-style .gm-ui-hover-effect>span{background:var(--muted)!important;}
+/* Info window content */
+.gm-iw{padding:14px 16px;font-family:var(--font);color:var(--text);min-width:200px;}
+.gm-iw-type{font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:4px;}
+.gm-iw-name{font-size:14px;font-weight:800;margin-bottom:10px;}
+.gm-iw-row{display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--border);font-size:11px;color:var(--muted);}
+.gm-iw-row:last-child{border:none;}
+.gm-iw-val{font-weight:700;color:var(--text);font-family:var(--mono);font-size:10.5px;}
+.gm-iw-bar-wrap{height:4px;background:rgba(255,255,255,.1);border-radius:2px;margin:6px 0;}
+.gm-iw-bar-fill{height:100%;border-radius:2px;}
+</style>
+</head>
+<body>
+
+<!-- ═══ TOP NAV ═══ -->
+<div id="nav">
+  <div class="nav-logo">C</div>
+  <div style="margin-right:12px;">
+    <div class="nav-title">Cook Retail Network</div>
+    <div class="nav-sub">Bboxx Rwanda · TotalEnergies</div>
+  </div>
+  <div class="nav-tabs">
+    <button class="ntab active" onclick="goPage('map')">MAP</button>
+    <button class="ntab" onclick="goPage('stock')">STOCK</button>
+    <button class="ntab" onclick="goPage('sales')">SALES</button>
+    <button class="ntab" onclick="goPage('retailers')">RETAILERS</button>
+    <button class="ntab" onclick="goPage('insights')">INSIGHTS</button>
+    <button class="ntab" onclick="goPage('settings')">SETTINGS</button>
+  </div>
+  <div class="nav-sp"></div>
+  <div class="live-dot">LIVE SYNC</div>
+</div>
+
+<div id="layout">
+
+<!-- ══ LEFT SIDEBAR (unchanged structure) ══ -->
+<div id="sidebar">
+  <div class="sb">
+    <div class="sbt">Network Status</div>
+    <div class="stats-row">
+      <div class="stat-mini"><div class="stat-val" style="color:var(--te);" id="sb-cust">6,286</div><div class="stat-lbl">Customers</div></div>
+      <div class="stat-mini"><div class="stat-val" style="color:#fff;" id="sb-sr">7</div><div class="stat-lbl">SR Shops</div></div>
+      <div class="stat-mini"><div class="stat-val" style="color:var(--jr);" id="sb-jr">18</div><div class="stat-lbl">Jr Retailers</div></div>
+      <div class="stat-mini"><div class="stat-val" style="color:var(--warn);" id="sb-stock">7,400</div><div class="stat-lbl">Total Stock</div></div>
+    </div>
+  </div>
+  <div class="sb">
+    <div class="sbt">Senior Retailers</div>
+    <div id="shop-list"></div>
+  </div>
+  <div class="sb">
+    <div class="sbt">Jump to District</div>
+    <div style="display:flex;flex-wrap:wrap;gap:4px;">
+      <button class="btn-sm" onclick="gmFly(-1.94,30.10,14)">Kigali</button>
+      <button class="btn-sm" onclick="gmFly(-1.495,29.637,14)">Musanze</button>
+      <button class="btn-sm" onclick="gmFly(-2.606,29.738,14)">Huye</button>
+      <button class="btn-sm" onclick="gmFly(-2.083,29.752,14)">Muhanga</button>
+      <button class="btn-sm" onclick="gmFly(-1.955,30.437,14)">Rwamagana</button>
+      <button class="btn-sm" onclick="gmFly(-1.85,30.05,9)">All Rwanda</button>
+    </div>
+  </div>
+  <div class="sb" style="margin-top:auto;">
+    <div style="font-size:10px;color:var(--muted);line-height:1.6;">
+      Map: Google Maps Platform<br>
+      <strong style="color:rgba(255,255,255,.4);">© 2025 Bboxx Rwanda</strong>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MAIN: Google Map + Side Control Panel ══ -->
+<div id="main">
+
+  <!-- MAP PAGES container -->
+  <div id="map-chamber" style="flex:1;display:flex;height:100%;position:relative;min-width:0;">
+
+    <!-- ① Google Map canvas -->
+    <div id="gmap"></div>
+
+    <!-- ② Side Control Panel (NEW - to the right of the map) -->
+    <div id="map-ctrl">
+
+      <!-- Header -->
+      <div class="ctrl-header">
+        <div class="ctrl-header-icon">🗺</div>
+        <div>
+          <div class="ctrl-header-title">Map Control Panel</div>
+          <div class="ctrl-header-sub">Google Maps · Live Sync</div>
+        </div>
+      </div>
+
+      <!-- API Key notice -->
+      <div class="cs" id="api-notice" style="background:rgba(245,158,11,.05);border-bottom:1px solid rgba(245,158,11,.2);">
+        <div style="font-size:10.5px;color:var(--warn);font-weight:600;margin-bottom:6px;">⚠ Enter your Google Maps API Key</div>
+        <div style="font-size:10px;color:var(--muted);margin-bottom:8px;line-height:1.5;">Get a free key at <strong style="color:var(--te);">console.cloud.google.com</strong> → Maps JS API</div>
+        <input class="fi" id="api-key-input" placeholder="AIzaSy..." style="font-family:var(--mono);font-size:11px;">
+        <button class="btn-g" onclick="loadGoogleMaps()">Load Map →</button>
+      </div>
+
+      <!-- ── SECTION 1: Location Editor ── -->
+      <div class="cs">
+        <div class="cs-title">① Location Editor</div>
+
+        <!-- Tab strip -->
+        <div style="display:flex;gap:3px;background:var(--bg3);border-radius:7px;padding:3px;margin-bottom:10px;">
+          <button class="btn-sm" id="lt-sr" onclick="setLocTab('sr')" style="flex:1;text-align:center;font-size:10px;">Shops (SR)</button>
+          <button class="btn-sm" id="lt-jr" onclick="setLocTab('jr')" style="flex:1;text-align:center;font-size:10px;">JRs</button>
+        </div>
+
+        <!-- Location list -->
+        <div id="loc-list" style="max-height:220px;overflow-y:auto;margin-bottom:10px;"></div>
+
+        <!-- Add new -->
+        <div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px;margin-top:4px;">
+          <div style="font-size:10px;font-weight:700;color:var(--muted);margin-bottom:8px;letter-spacing:.5px;text-transform:uppercase;">Add New Location</div>
+          <select class="fi" id="new-type" style="margin-bottom:6px;">
+            <option value="sr">Senior Retailer (Shop)</option>
+            <option value="jr">Junior Retailer</option>
+            <option value="cluster">Household Cluster</option>
+          </select>
+          <input class="fi" id="new-name" placeholder="Name (e.g. Kimironko Shop)">
+          <div class="fi-row" style="margin-bottom:6px;">
+            <input class="fi" id="new-lat" placeholder="Latitude (-1.95...)">
+            <input class="fi" id="new-lng" placeholder="Longitude (30.11...)">
+          </div>
+          <div style="display:flex;gap:6px;">
+            <button class="btn-g" style="flex:1;" onclick="addLocation()">+ Add to Map</button>
+            <button class="btn-sm" onclick="startPickMode()" title="Click on map to pick coordinates">📍 Pick</button>
+          </div>
+          <div id="pick-hint" style="font-size:10px;color:var(--te);margin-top:5px;display:none;">Click anywhere on the map to set coordinates</div>
+        </div>
+      </div>
+
+      <!-- ── SECTION 2: Stock Manager ── -->
+      <div class="cs">
+        <div class="cs-title">② Stock Manager</div>
+
+        <!-- Color legend -->
+        <div style="background:var(--bg3);border:1px solid var(--border);border-radius:7px;padding:9px;margin-bottom:10px;">
+          <div style="font-size:9px;font-weight:700;color:var(--muted);letter-spacing:.8px;text-transform:uppercase;margin-bottom:7px;">Marker Color = Stock Level</div>
+          <div class="sclg"><div class="sclg-dot" style="background:#06c167;box-shadow:0 0 6px #06c167aa;"></div> Green → ≥65% stock (Available)</div>
+          <div class="sclg"><div class="sclg-dot" style="background:#f59e0b;box-shadow:0 0 6px #f59e0baa;"></div> Amber → 30–64% stock (Low)</div>
+          <div class="sclg"><div class="sclg-dot" style="background:#ef4444;box-shadow:0 0 6px #ef4444aa;"></div> Red → &lt;30% stock (Out)</div>
+        </div>
+
+        <div id="stock-manager-list"></div>
+      </div>
+
+      <!-- ── SECTION 3: Radius Settings ── -->
+      <div class="cs">
+        <div class="cs-title">③ Radius Settings</div>
+
+        <div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px;margin-bottom:8px;">
+          <div class="radius-row">
+            <div class="radius-label">Kigali (urban)</div>
+            <div class="radius-badge rb-kigali" id="kigali-badge">3.0 km</div>
+          </div>
+          <input type="range" id="sl-kigali" min="0.5" max="8" step="0.5" value="3" oninput="updateRadius('kigali',this.value)">
+
+          <div class="radius-row">
+            <div class="radius-label">Outside Kigali (rural)</div>
+            <div class="radius-badge rb-rural" id="rural-badge">5.0 km</div>
+          </div>
+          <input type="range" id="sl-rural" min="1" max="20" step="1" value="5" oninput="updateRadius('rural',this.value)">
+        </div>
+
+        <!-- Layer toggles -->
+        <div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px;">
+          <div style="font-size:9px;font-weight:700;color:var(--muted);letter-spacing:.8px;text-transform:uppercase;margin-bottom:8px;">Layer Visibility</div>
+          <div class="layer-tog">
+            <span class="layer-tog-label">SR Shops</span>
+            <div class="tog-sw on" id="tog-sr" onclick="toggleLayer('sr')"></div>
+          </div>
+          <div class="layer-tog">
+            <span class="layer-tog-label">Junior Retailers</span>
+            <div class="tog-sw on" id="tog-jr" onclick="toggleLayer('jr')"></div>
+          </div>
+          <div class="layer-tog">
+            <span class="layer-tog-label">Household Clusters</span>
+            <div class="tog-sw on" id="tog-cl" onclick="toggleLayer('cl')"></div>
+          </div>
+          <div class="layer-tog">
+            <span class="layer-tog-label">Kigali Radius Circles</span>
+            <div class="tog-sw on" id="tog-kr" onclick="toggleLayer('kr')"></div>
+          </div>
+          <div class="layer-tog">
+            <span class="layer-tog-label">Rural Radius Circles</span>
+            <div class="tog-sw on" id="tog-rr" onclick="toggleLayer('rr')"></div>
+          </div>
+          <div class="layer-tog">
+            <span class="layer-tog-label">Supply Lines</span>
+            <div class="tog-sw on" id="tog-sl" onclick="toggleLayer('sl')"></div>
+          </div>
+          <div class="layer-tog">
+            <span class="layer-tog-label">Pilot Customers</span>
+            <div class="tog-sw off" id="tog-pt" onclick="toggleLayer('pt')"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Map style -->
+      <div class="cs">
+        <div class="cs-title">Map Style</div>
+        <div style="display:flex;gap:4px;">
+          <button class="btn-sm" style="flex:1;font-size:10px;" onclick="setMapStyle('dark')">🌑 Dark</button>
+          <button class="btn-sm" style="flex:1;font-size:10px;" onclick="setMapStyle('satellite')">🛰 Satellite</button>
+          <button class="btn-sm" style="flex:1;font-size:10px;" onclick="setMapStyle('standard')">🗺 Standard</button>
+        </div>
+      </div>
+
+    </div><!-- /map-ctrl -->
+  </div><!-- /map-chamber -->
+
+  <!-- ══ NON-MAP PAGES ══ -->
+  <div id="stock-page" class="page" style="position:absolute;inset:0;background:var(--bg);z-index:50;display:none;">
+    <div class="page-title">Stock Tracker</div>
+    <div class="page-sub">Current fill vs Sept 2026 target · Click values to edit · Changes sync to map instantly</div>
+    <div class="card" style="border-left:3px solid var(--te);margin-bottom:18px;">
+      <div class="card-title">⛽ TotalEnergies Monthly Allocation</div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;">
+        <div><div style="font-size:22px;font-weight:800;font-family:var(--mono);color:var(--te);">12,000</div><div style="font-size:10px;color:var(--muted);">Total cyl/mo</div></div>
+        <div><div style="font-size:22px;font-weight:800;font-family:var(--mono);color:#a3e635;">8,400</div><div style="font-size:10px;color:var(--muted);">Distributed</div></div>
+        <div><div style="font-size:22px;font-weight:800;font-family:var(--mono);color:var(--warn);">2,100</div><div style="font-size:10px;color:var(--muted);">In transit</div></div>
+        <div><div style="font-size:22px;font-weight:800;font-family:var(--mono);color:var(--blue);">1,500</div><div style="font-size:10px;color:var(--muted);">Reserve</div></div>
+      </div>
+    </div>
+    <div class="stock-grid" id="stock-grid"></div>
+  </div>
+
+  <div id="sales-page" class="page" style="position:absolute;inset:0;background:var(--bg);z-index:50;display:none;">
+    <div class="page-title">Sales Dashboard</div>
+    <div class="page-sub">OSP cylinder sales · Click table cells to edit</div>
+    <div class="dist-grid" id="dist-grid"></div>
+    <div class="card" style="margin-bottom:16px;">
+      <div class="card-title">Cylinders / Month by District</div>
+      <div class="bar-chart" id="sales-bar"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Customer Metrics</div>
+      <div style="overflow-x:auto;"><table id="sales-table"></table></div>
+    </div>
+  </div>
+
+  <div id="retailers-page" class="page" style="position:absolute;inset:0;background:var(--bg);z-index:50;display:none;">
+    <div class="page-title">Retailer Directory</div>
+    <div class="page-sub">Click a card to fly to location on map</div>
+    <div style="display:flex;gap:4px;margin-bottom:14px;">
+      <button class="btn-ghost" id="rf-all" onclick="filterRet('all')" style="border-color:var(--border2);color:white;">All</button>
+      <button class="btn-ghost" id="rf-sr" onclick="filterRet('sr')">Senior</button>
+      <button class="btn-ghost" id="rf-jr" onclick="filterRet('jr')">Junior</button>
+    </div>
+    <div class="ret-grid" id="ret-grid"></div>
+  </div>
+
+  <div id="insights-page" class="page" style="position:absolute;inset:0;background:var(--bg);z-index:50;display:none;">
+    <div class="page-title">Network Insights</div>
+    <div class="page-sub">Live-computed from current data state</div>
+    <div class="kpi-grid" id="kpi-grid"></div>
+    <div id="ins-list"></div>
+  </div>
+
+  <div id="settings-page" class="page" style="position:absolute;inset:0;background:var(--bg);z-index:50;display:none;">
+    <div class="page-title">Settings & Admin</div>
+    <div class="page-sub">Full data control · saved to localStorage</div>
+    <div class="settings-grid">
+      <div>
+        <div class="card">
+          <div class="card-title">Add Junior Retailer</div>
+          <div class="fg"><label>Name</label><input class="form-input" id="s-name" placeholder="Full name"></div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+            <div class="fg"><label>Latitude</label><input class="form-input" id="s-lat" placeholder="-1.9xxx"></div>
+            <div class="fg"><label>Longitude</label><input class="form-input" id="s-lng" placeholder="30.0xxx"></div>
+          </div>
+          <button class="btn-primary" onclick="addJR()">Add JR</button>
+        </div>
+        <div class="card">
+          <div class="card-title">Bulk Import (CSV)</div>
+          <select class="form-input" id="imp-type" style="margin-bottom:6px;"><option value="jr">Junior Retailers</option><option value="sr">Senior Retailers</option></select>
+          <textarea class="form-input" id="imp-csv" rows="5" placeholder="Name, lat, lng per line"></textarea>
+          <button class="btn-primary" onclick="importCSV()">Import</button>
+        </div>
+      </div>
+      <div>
+        <div class="card">
+          <div class="card-title">Export Data</div>
+          <button class="btn-ghost" style="width:100%;margin-bottom:6px;" onclick="exportCSV('jr')">⬇ Junior Retailers CSV</button>
+          <button class="btn-ghost" style="width:100%;margin-bottom:6px;" onclick="exportCSV('sr')">⬇ Senior Retailers CSV</button>
+          <button class="btn-ghost" style="width:100%;margin-bottom:6px;" onclick="exportCSV('clusters')">⬇ Clusters CSV</button>
+          <button class="btn-red" onclick="resetData()">🗑 Reset to Defaults</button>
+        </div>
+        <div class="card">
+          <div class="card-title">Network Health Score</div>
+          <div id="health-score" style="font-size:54px;font-weight:800;text-align:center;padding:12px 0;font-family:var(--mono);"></div>
+          <div id="health-detail" style="font-size:11px;color:var(--muted);text-align:center;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /main -->
+</div><!-- /layout -->
+
+<!-- EDIT MODAL -->
+<div id="edit-modal" onclick="closeEditModal(event)">
+  <div id="edit-box">
+    <div class="em-title">Edit Location <span class="em-close" onclick="closeEditModal()">✕</span></div>
+    <div class="fg"><label>Name</label><input class="fi" id="em-name" placeholder="Name"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:6px;">
+      <div class="fg"><label>Latitude</label><input class="fi" id="em-lat" placeholder="-1.95..."></div>
+      <div class="fg"><label>Longitude</label><input class="fi" id="em-lng" placeholder="30.11..."></div>
+    </div>
+    <div class="fg"><label>Status</label>
+      <select class="fi" id="em-status">
+        <option value="active">Active</option>
+        <option value="inactive">Inactive</option>
+      </select>
+    </div>
+    <div class="fg" id="em-stock-group">
+      <label>Stock (cylinders)</label>
+      <div style="display:flex;gap:6px;align-items:center;">
+        <input class="fi" id="em-stock" type="number" style="margin-bottom:0;">
+        <span style="font-size:11px;color:var(--muted);">/ <span id="em-cap"></span></span>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:4px;">
+      <button class="btn-g" style="flex:1;" onclick="saveEdit()">Save Changes</button>
+      <button class="btn-danger" onclick="deleteLocation()">Delete</button>
+    </div>
+    <input type="hidden" id="em-id"><input type="hidden" id="em-type">
+  </div>
+</div>
+
+<div id="toast-container"></div>
+
+<!-- ══════════════════════════════════════════════════════
+     SHARED STATE — Single source of truth
+     ══════════════════════════════════════════════════════ -->
+<script>
+'use strict';
+
+// ─── ZONE COLOR PALETTE ───────────────────────────────────
+const ZONE_COLORS=['#06c167','#3b82f6','#f59e0b','#a855f7','#ef4444','#06b6d4','#f97316'];
+
+// ─── DEFAULT DATA ─────────────────────────────────────────
+const DEFAULT={
+  sr:[
+    {id:'sr1',name:'Remera Shop',    lat:-1.95261,lng:30.11422,stock:1800,cap:2200,target:2200,color:ZONE_COLORS[0],status:'active'},
+    {id:'sr2',name:'Nyacyonga Shop', lat:-1.86152,lng:30.08880,stock:1400,cap:2000,target:2000,color:ZONE_COLORS[1],status:'active'},
+    {id:'sr3',name:'Musanze Shop',   lat:-1.49605,lng:29.63908,stock:900, cap:1500,target:1500,color:ZONE_COLORS[2],status:'active'},
+    {id:'sr4',name:'Kicukiro Shop',  lat:-1.91566,lng:30.07491,stock:1600,cap:2000,target:2000,color:ZONE_COLORS[3],status:'active'},
+    {id:'sr5',name:'Huye Shop',      lat:-2.60625,lng:29.73777,stock:700, cap:1200,target:1200,color:ZONE_COLORS[4],status:'active'},
+    {id:'sr6',name:'Muhanga Shop',   lat:-2.08311,lng:29.75247,stock:1100,cap:1500,target:1500,color:ZONE_COLORS[5],status:'active'},
+    {id:'sr7',name:'Rwamagana Shop', lat:-1.95483,lng:30.43680,stock:900, cap:1500,target:1500,color:ZONE_COLORS[6],status:'active'},
+  ],
+  jr:[
+    {id:'jr1', name:"Donath Yumihoze",           lat:-1.90731,lng:30.12658,status:'active'},
+    {id:'jr2', name:"Usanase Delphine",           lat:-1.92288,lng:30.04666,status:'active'},
+    {id:'jr3', name:"Mizero Tharcisse",           lat:-1.87100,lng:30.04697,status:'active'},
+    {id:'jr4', name:"Jonas Nshimiyimana",         lat:-2.02616,lng:30.10436,status:'active'},
+    {id:'jr5', name:"Uwimana Zacharie",           lat:-2.01244,lng:30.12250,status:'active'},
+    {id:'jr6', name:"Murera Idrissa",             lat:-1.90680,lng:30.08025,status:'active'},
+    {id:'jr7', name:"Donathille Mukandayiisenga", lat:-1.92511,lng:30.13994,status:'active'},
+    {id:'jr8', name:"Niyigena Mary",              lat:-1.99738,lng:30.19291,status:'active'},
+    {id:'jr9', name:"Theoneste Habumugisha",      lat:-1.98411,lng:30.22536,status:'active'},
+    {id:'jr10',name:"Umuhoza Delphine",           lat:-1.93458,lng:30.17408,status:'active'},
+    {id:'jr11',name:"Ayinkamiye Jeanne D'arc",    lat:-1.95063,lng:30.12583,status:'active'},
+    {id:'jr12',name:"Delphine Umutesi",           lat:-1.90613,lng:30.12866,status:'active'},
+    {id:'jr13',name:"Uwizeyimana Josiane",        lat:-1.94149,lng:30.05024,status:'active'},
+    {id:'jr14',name:"Uwambajimana Esther",        lat:-1.57786,lng:29.63844,status:'active'},
+    {id:'jr15',name:"Mukamugenzi Vestine",        lat:-1.99027,lng:30.13711,status:'active'},
+    {id:'jr16',name:"Liberee",                    lat:-1.96525,lng:30.07438,status:'active'},
+    {id:'jr17',name:"Sibomana Romuard",           lat:-1.86152,lng:30.08880,status:'active'},
+    {id:'jr18',name:"Aline Urwibutso",            lat:-1.48338,lng:29.62205,status:'active'},
+  ],
+  clusters:[
+    {id:'c1', name:'Bumbogo',    n:678,lat:-1.8976, lng:30.14738},
+    {id:'c2', name:'Busogo',     n:50, lat:-1.55387,lng:29.53979},
+    {id:'c3', name:'Gahanga',    n:615,lat:-2.03066,lng:30.10679},
+    {id:'c4', name:'Gatenga',    n:156,lat:-1.97562,lng:30.09192},
+    {id:'c5', name:'Gatsata',    n:204,lat:-1.92500,lng:30.04400},
+    {id:'c6', name:'Gisozi',     n:278,lat:-1.92000,lng:30.05000},
+    {id:'c7', name:'Jabana',     n:515,lat:-1.95000,lng:30.02000},
+    {id:'c8', name:'Kacyiru',    n:37, lat:-1.94500,lng:30.06100},
+    {id:'c9', name:'Kagarama',   n:57, lat:-1.98000,lng:30.11000},
+    {id:'c10',name:'Kanombe',    n:234,lat:-1.96300,lng:30.14700},
+    {id:'c11',name:'Kanyinya',   n:41, lat:-1.91000,lng:30.01000},
+    {id:'c12',name:'Kimihurura', n:41, lat:-1.95000,lng:30.07000},
+    {id:'c13',name:'Kimironko',  n:41, lat:-1.93500,lng:30.09000},
+    {id:'c14',name:'Kimisagara', n:41, lat:-1.97000,lng:30.04000},
+    {id:'c15',name:'Cyuve',      n:219,lat:-1.48306,lng:29.65446},
+    {id:'c16',name:'Gikondo',    n:25, lat:-1.97000,lng:30.07000},
+    {id:'c17',name:'Gikomero',   n:5,  lat:-1.88000,lng:30.12000},
+    {id:'c18',name:'Musanze',    n:41, lat:-1.49900,lng:29.63400},
+    {id:'c19',name:'Niboye',     n:41, lat:-1.98000,lng:30.09000},
+    {id:'c20',name:'Nyamirambo', n:41, lat:-1.97000,lng:30.03000},
+    {id:'c21',name:'Nyarugenge', n:41, lat:-1.97000,lng:30.04000},
+    {id:'c22',name:'Nyarugunga', n:41, lat:-1.99000,lng:30.14000},
+    {id:'c23',name:'Rusororo',   n:41, lat:-1.88000,lng:30.10000},
+    {id:'c24',name:'Huye',       n:9,  lat:-2.59600,lng:29.73400},
+    {id:'c25',name:'Muhanga',    n:41, lat:-2.08000,lng:29.75000},
+    {id:'c26',name:'Rwamagana',  n:90, lat:-1.95500,lng:30.43500},
+    {id:'c27',name:'Gitega',     n:41, lat:-1.97000,lng:30.06000},
+    {id:'c28',name:'Mageragere', n:41, lat:-1.99000,lng:30.02000},
+    {id:'c29',name:'Nduba',      n:41, lat:-1.85000,lng:30.12000},
+    {id:'c30',name:'Masoro',     n:41, lat:-1.88000,lng:30.11000},
+    {id:'c31',name:'Kinyinya',   n:41, lat:-1.90000,lng:30.08000},
+    {id:'c32',name:'Jali',       n:41, lat:-1.90000,lng:30.10000},
+  ],
+  pilots:[
+    [-1.863558,30.095929],[-1.847106,30.099198],[-1.849538,30.086784],
+    [-1.887855,30.090584],[-1.886195,30.091291],[-1.873135,30.047966],
+    [-1.878152,30.052191],[-1.825207,30.130215],[-1.873576,30.11833],
+    [-1.943848,30.11218], [-1.873096,30.047934],[-1.90083, 30.053494],
+    [-1.886152,30.09992], [-1.943792,30.082791],[-1.886732,30.088635],
+    [-1.923228,30.045173],[-1.905761,30.06201], [-1.876956,30.090755],
+    [-1.886604,30.088677],[-1.873424,30.0481],  [-1.877665,30.064222],
+    [-1.978332,30.182144],[-1.88927, 30.117608],[-1.86731, 30.058968],
+    [-1.928343,30.063176],[-1.897615,30.04262], [-1.88674, 30.088619],
+    [-1.893391,30.041065],[-1.860075,30.038231],[-1.870935,30.047204],
+    [-1.873112,30.047957],[-1.873377,30.048141],[-2.027652,30.103919],
+    [-1.873282,30.04798], [-1.892301,30.062557],[-1.878618,30.095097],
+    [-1.886663,30.08871], [-1.914921,30.064597],[-1.899399,30.074648],
+    [-1.90461, 30.094144],[-1.880145,30.05226], [-1.873049,30.047899],
+  ],
+  kigaliKm:3, ruralKm:5,
+};
+
+// ─── STATE (localStorage-persisted) ──────────────────────
+let S;
+function loadState(){try{const s=JSON.parse(localStorage.getItem('crn_v4'));if(s&&s.sr)return s;}catch(e){}return JSON.parse(JSON.stringify(DEFAULT));}
+function saveState(){localStorage.setItem('crn_v4',JSON.stringify(S));syncAllPages();}
+S=loadState();
+
+let SALES=JSON.parse(localStorage.getItem('crn_sales_v4')||JSON.stringify([
+  {d:'Kigali',   cust:3240,cyl:18450,growth:8.2},
+  {d:'Musanze',  cust:890, cyl:4200, growth:12.5},
+  {d:'Huye',     cust:320, cyl:1800, growth:3.1},
+  {d:'Muhanga',  cust:580, cyl:3100, growth:6.7},
+  {d:'Rwamagana',cust:410, cyl:2200, growth:9.4},
+  {d:'Other',    cust:846, cyl:4500, growth:4.8},
+]));
+function saveSales(){localStorage.setItem('crn_sales_v4',JSON.stringify(SALES));}
+
+// ─── HELPERS ─────────────────────────────────────────────
+function toast(msg,col='var(--te)'){
+  const el=document.createElement('div');
+  el.className='toast';
+  el.innerHTML=`<span style="color:${col};font-size:14px;">●</span> ${msg}`;
+  document.getElementById('toast-container').appendChild(el);
+  setTimeout(()=>el.remove(),3200);
+}
+function stockColor(pct){return pct>=0.65?'#06c167':pct>=0.3?'#f59e0b':'#ef4444';}
+function nearestSR(lat,lng){return S.sr.reduce((a,b)=>Math.hypot(b.lat-lat,b.lng-lng)<Math.hypot(a.lat-lat,a.lng-lng)?b:a);}
+function isKigali(lat,lng){return lat>-2.05&&lng>29.9;}
+function totalStock(){return S.sr.reduce((s,r)=>s+r.stock,0);}
+
+// ════════════════════════════════════════════════════════════
+// GOOGLE MAPS ENGINE
+// ════════════════════════════════════════════════════════════
+let gmap=null;           // google.maps.Map instance
+let gmObjects={          // all live map objects, keyed by entity id
+  markers:{},            // marker instances
+  circles:{},            // radius circle instances
+  polylines:[],          // supply line polylines
+  infoWindows:{},        // info window instances
+  clusterMarkers:[],     // cluster circle markers
+  pilotMarkers:[],       // pilot dot markers
+};
+let layerVisible={sr:true,jr:true,cl:true,kr:true,rr:true,sl:true,pt:false};
+let activeInfoWindow=null;
+let pickMode=false;
+let currentLocTab='sr';
+let editTarget=null;
+
+// Dark map style (matches existing UI perfectly)
+const DARK_STYLE=[
+  {elementType:'geometry',stylers:[{color:'#0a0a0a'}]},
+  {elementType:'labels.text.fill',stylers:[{color:'rgba(255,255,255,0.5)'}]},
+  {elementType:'labels.text.stroke',stylers:[{color:'#000000'}]},
+  {featureType:'road',elementType:'geometry',stylers:[{color:'#1a1a1a'}]},
+  {featureType:'road.arterial',elementType:'geometry',stylers:[{color:'#222222'}]},
+  {featureType:'road.highway',elementType:'geometry',stylers:[{color:'#2a2a2a'}]},
+  {featureType:'road.highway',elementType:'geometry.stroke',stylers:[{color:'#111111'}]},
+  {featureType:'water',elementType:'geometry',stylers:[{color:'#05111f'}]},
+  {featureType:'poi',stylers:[{visibility:'off'}]},
+  {featureType:'transit',stylers:[{visibility:'off'}]},
+  {featureType:'administrative',elementType:'geometry',stylers:[{color:'#1f1f1f'}]},
+  {featureType:'administrative.country',elementType:'geometry.stroke',stylers:[{color:'#333333'}]},
+  {featureType:'landscape',elementType:'geometry',stylers:[{color:'#0f0f0f'}]},
+];
+
+const SATELLITE_STYLE=[];
+const STANDARD_STYLE=[{featureType:'poi',stylers:[{visibility:'off'}]}];
+
+// Load Google Maps via API key
+function loadGoogleMaps(){
+  const key=document.getElementById('api-key-input').value.trim();
+  if(!key){toast('Please enter your Google Maps API key','var(--warn)');return;}
+  if(window.google&&window.google.maps){initGoogleMap();return;}
+  const script=document.createElement('script');
+  script.src=`https://maps.googleapis.com/maps/api/js?key=${key}&callback=initGoogleMap&libraries=geometry`;
+  script.async=true;
+  script.onerror=()=>toast('Invalid API key or Maps API not enabled. Check console.cloud.google.com','var(--danger)');
+  document.head.appendChild(script);
+  document.getElementById('api-notice').style.display='none';
+  toast('Loading Google Maps...','var(--blue)');
+}
+
+// Called by Google Maps loader callback
+window.initGoogleMap=function(){
+  gmap=new google.maps.Map(document.getElementById('gmap'),{
+    center:{lat:-1.85,lng:30.05},
+    zoom:10,
+    styles:DARK_STYLE,
+    disableDefaultUI:false,
+    zoomControl:true,
+    mapTypeControl:false,
+    streetViewControl:false,
+    fullscreenControl:false,
+    clickableIcons:false,
+    backgroundColor:'#0a0a0a',
+    restriction:{
+      latLngBounds:{north:-0.5,south:-3.2,west:28.5,east:31.5},
+      strictBounds:false,
+    },
+  });
+
+  // Click handler for pick mode
+  gmap.addListener('click',e=>{
+    if(pickMode){
+      document.getElementById('new-lat').value=e.latLng.lat().toFixed(6);
+      document.getElementById('new-lng').value=e.latLng.lng().toFixed(6);
+      pickMode=false;
+      document.getElementById('pick-hint').style.display='none';
+      gmap.setOptions({draggableCursor:''});
+      toast('Coordinates captured','var(--te)');
+    }
+  });
+
+  renderAllMapObjects();
+  document.getElementById('api-notice').style.display='none';
+  toast('Google Maps loaded — all data synced ✓');
+};
+
+// ── CREATE MARKER ICON SVG ─────────────────────────────────
+function markerSVG(color,label,size=40){
+  const sCol=stockColor(1); // glow color
+  return {
+    url:`data:image/svg+xml;charset=UTF-8,${encodeURIComponent(`
+      <svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
+        <defs>
+          <filter id="g">
+            <feGaussianBlur stdDeviation="3" result="blur"/>
+            <feFlood flood-color="${color}" flood-opacity="0.5" result="color"/>
+            <feComposite in="color" in2="blur" operator="in" result="shadow"/>
+            <feMerge><feMergeNode in="shadow"/><feMergeNode in="SourceGraphic"/></feMerge>
+          </filter>
+        </defs>
+        <circle cx="${size/2}" cy="${size/2}" r="${size/2-3}" fill="${color}" stroke="rgba(255,255,255,0.25)" stroke-width="2" filter="url(#g)"/>
+        <text x="${size/2}" y="${size/2+1}" text-anchor="middle" dominant-baseline="middle" fill="rgba(0,0,0,0.85)" font-family="Syne,sans-serif" font-size="${size>32?11:8}" font-weight="800">${label}</text>
+      </svg>`)}`,
+    scaledSize:new google.maps.Size(size,size),
+    anchor:new google.maps.Point(size/2,size/2),
+  };
+}
+
+function clusterSVG(n,col){
+  const r=n>=400?20:n>=161?16:n>=61?12:n>=22?9:6;
+  const d=r*2+6;
+  return {
+    url:`data:image/svg+xml;charset=UTF-8,${encodeURIComponent(`
+      <svg xmlns="http://www.w3.org/2000/svg" width="${d}" height="${d}" viewBox="0 0 ${d} ${d}">
+        <circle cx="${d/2}" cy="${d/2}" r="${r}" fill="${col}" opacity="0.85" stroke="rgba(255,255,255,0.2)" stroke-width="1"/>
+      </svg>`)}`,
+    scaledSize:new google.maps.Size(d,d),
+    anchor:new google.maps.Point(d/2,d/2),
+  };
+}
+
+function pilotSVG(){
+  return {
+    url:`data:image/svg+xml;charset=UTF-8,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="8" height="8"><circle cx="4" cy="4" r="3.5" fill="#E8400C" opacity="0.8"/></svg>`)}`,
+    scaledSize:new google.maps.Size(8,8),
+    anchor:new google.maps.Point(4,4),
+  };
+}
+
+// ── INFO WINDOW CONTENT ────────────────────────────────────
+function srInfoContent(sr){
+  const pct=sr.stock/sr.cap;
+  const col=stockColor(pct);
+  const jrsA=S.jr.filter(j=>nearestSR(j.lat,j.lng).id===sr.id);
+  return `<div class="gm-iw">
+    <div class="gm-iw-type" style="color:${sr.color};">Senior Retailer</div>
+    <div class="gm-iw-name">🏪 ${sr.name}</div>
+    <div class="gm-iw-bar-wrap"><div class="gm-iw-bar-fill" style="width:${Math.round(pct*100)}%;background:${col};height:100%;border-radius:2px;"></div></div>
+    <div class="gm-iw-row"><span>Stock</span><span class="gm-iw-val" style="color:${col};">${sr.stock} / ${sr.cap} cyl</span></div>
+    <div class="gm-iw-row"><span>Fill level</span><span class="gm-iw-val">${Math.round(pct*100)}%</span></div>
+    <div class="gm-iw-row"><span>Status</span><span class="gm-iw-val" style="color:${sr.status==='active'?'#06c167':'#ef4444'};">${sr.status}</span></div>
+    <div class="gm-iw-row"><span>JRs assigned</span><span class="gm-iw-val">${jrsA.length}</span></div>
+    <div class="gm-iw-row" style="border:none;">
+      <button onclick="openEditModal('sr','${sr.id}')" style="background:var(--te);color:#000;border:none;border-radius:5px;padding:5px 10px;font-size:11px;font-weight:700;cursor:pointer;font-family:Syne,sans-serif;margin-top:4px;">✏ Edit</button>
+    </div>
+  </div>`;
+}
+function jrInfoContent(jr){
+  const sr=nearestSR(jr.lat,jr.lng);
+  return `<div class="gm-iw">
+    <div class="gm-iw-type" style="color:${sr.color};">Junior Retailer</div>
+    <div class="gm-iw-name">👤 ${jr.name}</div>
+    <div class="gm-iw-row"><span>Parent shop</span><span class="gm-iw-val">${sr.name}</span></div>
+    <div class="gm-iw-row"><span>Zone type</span><span class="gm-iw-val">${isKigali(jr.lat,jr.lng)?'Kigali':'Rural'}</span></div>
+    <div class="gm-iw-row"><span>Status</span><span class="gm-iw-val" style="color:${jr.status==='active'?'#06c167':'#ef4444'};">${jr.status||'active'}</span></div>
+    <div class="gm-iw-row" style="border:none;">
+      <button onclick="openEditModal('jr','${jr.id}')" style="background:#a855f7;color:#fff;border:none;border-radius:5px;padding:5px 10px;font-size:11px;font-weight:700;cursor:pointer;font-family:Syne,sans-serif;margin-top:4px;">✏ Edit</button>
+    </div>
+  </div>`;
+}
+
+// ── RENDER ALL OBJECTS ─────────────────────────────────────
+function renderAllMapObjects(){
+  if(!gmap) return;
+  clearAllMapObjects();
+  renderSRMarkers();
+  renderJRMarkers();
+  renderClusters();
+  renderSupplyLines();
+  renderRadiusCircles();
+  renderPilots();
+}
+
+function clearAllMapObjects(){
+  Object.values(gmObjects.markers).forEach(m=>m.setMap(null));
+  Object.values(gmObjects.circles).forEach(c=>c.setMap(null));
+  gmObjects.polylines.forEach(p=>p.setMap(null));
+  Object.values(gmObjects.infoWindows).forEach(iw=>iw.close());
+  gmObjects.clusterMarkers.forEach(m=>m.setMap(null));
+  gmObjects.pilotMarkers.forEach(m=>m.setMap(null));
+  gmObjects={markers:{},circles:{},polylines:[],infoWindows:{},clusterMarkers:[],pilotMarkers:[]};
+}
+
+// SR Markers
+function renderSRMarkers(){
+  S.sr.forEach(sr=>{
+    const pct=sr.stock/sr.cap;
+    const col=stockColor(pct);
+    const marker=new google.maps.Marker({
+      position:{lat:sr.lat,lng:sr.lng},
+      map:layerVisible.sr?gmap:null,
+      icon:markerSVG(col,'SR',44),
+      title:sr.name,
+      draggable:true,
+      zIndex:100,
+      label:{
+        text:sr.name,
+        color:'rgba(255,255,255,0.85)',
+        fontSize:'10px',
+        fontWeight:'700',
+        fontFamily:'Syne,sans-serif',
+        className:'gm-label',
+      },
+    });
+    // Info window
+    const iw=new google.maps.InfoWindow({content:srInfoContent(sr),maxWidth:260});
+    marker.addListener('click',()=>{
+      if(activeInfoWindow) activeInfoWindow.close();
+      iw.open({anchor:marker,map:gmap});
+      activeInfoWindow=iw;
+    });
+    // Drag = update coords
+    marker.addListener('dragend',e=>{
+      sr.lat=parseFloat(e.latLng.lat().toFixed(6));
+      sr.lng=parseFloat(e.latLng.lng().toFixed(6));
+      saveState();
+      renderAllMapObjects(); // full re-render to update supply lines + circles
+      toast(`${sr.name} moved to new position`);
+    });
+    gmObjects.markers[sr.id]=marker;
+    gmObjects.infoWindows[sr.id]=iw;
+  });
+}
+
+// JR Markers
+function renderJRMarkers(){
+  S.jr.forEach(jr=>{
+    const sr=nearestSR(jr.lat,jr.lng);
+    const marker=new google.maps.Marker({
+      position:{lat:jr.lat,lng:jr.lng},
+      map:layerVisible.jr?gmap:null,
+      icon:markerSVG(sr.color,'JR',28),
+      title:jr.name,
+      draggable:true,
+      zIndex:50,
+    });
+    const iw=new google.maps.InfoWindow({content:jrInfoContent(jr),maxWidth:240});
+    marker.addListener('click',()=>{
+      if(activeInfoWindow) activeInfoWindow.close();
+      iw.open({anchor:marker,map:gmap});
+      activeInfoWindow=iw;
+    });
+    marker.addListener('dragend',e=>{
+      jr.lat=parseFloat(e.latLng.lat().toFixed(6));
+      jr.lng=parseFloat(e.latLng.lng().toFixed(6));
+      saveState(); renderAllMapObjects();
+      toast(`${jr.name} moved`);
+    });
+    gmObjects.markers[jr.id]=marker;
+    gmObjects.infoWindows[jr.id]=iw;
+  });
+}
+
+// Cluster circle markers
+function renderClusters(){
+  S.clusters.forEach(c=>{
+    const sr=nearestSR(c.lat,c.lng);
+    const pct=sr.stock/sr.cap;
+    const col=pct>=0.65?
+      (c.n>=161?'#1e40af':c.n>=61?'#2563eb':c.n>=22?'#3b82f6':'#93c5fd'):
+      (pct>=0.3?'#b45309':'#991b1b');
+    const marker=new google.maps.Marker({
+      position:{lat:c.lat,lng:c.lng},
+      map:layerVisible.cl?gmap:null,
+      icon:clusterSVG(c.n,col),
+      title:`${c.name} — ${c.n} customers`,
+      zIndex:10,
+    });
+    const iw=new google.maps.InfoWindow({
+      content:`<div class="gm-iw">
+        <div class="gm-iw-type" style="color:#3b82f6;">Household Cluster</div>
+        <div class="gm-iw-name">🏘 ${c.name}</div>
+        <div class="gm-iw-row"><span>Customers</span><span class="gm-iw-val">${c.n}</span></div>
+        <div class="gm-iw-row"><span>Nearest shop</span><span class="gm-iw-val">${sr.name.replace(' Shop','')}</span></div>
+        <div class="gm-iw-row" style="border:none;"><span>Shop stock</span><span class="gm-iw-val" style="color:${stockColor(pct)};">${Math.round(pct*100)}%</span></div>
+      </div>`,maxWidth:220});
+    marker.addListener('click',()=>{
+      if(activeInfoWindow) activeInfoWindow.close();
+      iw.open({anchor:marker,map:gmap});
+      activeInfoWindow=iw;
+    });
+    gmObjects.clusterMarkers.push(marker);
+  });
+}
+
+// Supply line polylines
+function renderSupplyLines(){
+  if(!layerVisible.sl) return;
+  S.jr.forEach(jr=>{
+    const sr=nearestSR(jr.lat,jr.lng);
+    const line=new google.maps.Polyline({
+      path:[{lat:sr.lat,lng:sr.lng},{lat:jr.lat,lng:jr.lng}],
+      geodesic:true,
+      strokeColor:sr.color,
+      strokeOpacity:0.25,
+      strokeWeight:1.5,
+      icons:[{icon:{path:'M 0,-1 0,1',strokeOpacity:1,scale:2},offset:'0',repeat:'12px'}],
+      map:gmap,
+    });
+    gmObjects.polylines.push(line);
+  });
+  // TE → SR lines
+  S.sr.forEach(sr=>{
+    const line=new google.maps.Polyline({
+      path:[{lat:-1.945,lng:30.062},{lat:sr.lat,lng:sr.lng}],
+      strokeColor:'#06c167',strokeOpacity:0.15,strokeWeight:1,
+      icons:[{icon:{path:'M 0,-1 0,1',strokeOpacity:1,scale:2},offset:'0',repeat:'14px'}],
+      map:gmap,
+    });
+    gmObjects.polylines.push(line);
+  });
+}
+
+// Radius circles
+function renderRadiusCircles(){
+  S.jr.forEach(jr=>{
+    const kigali=isKigali(jr.lat,jr.lng);
+    const km=kigali?S.kigaliKm:S.ruralKm;
+    const vis=(kigali?layerVisible.kr:layerVisible.rr);
+    const sr=nearestSR(jr.lat,jr.lng);
+    const circle=new google.maps.Circle({
+      center:{lat:jr.lat,lng:jr.lng},
+      radius:km*1000,
+      strokeColor:sr.color,
+      strokeOpacity:0.5,
+      strokeWeight:1.5,
+      fillColor:sr.color,
+      fillOpacity:0.06,
+      map:vis?gmap:null,
+    });
+    gmObjects.circles[jr.id]=circle;
+  });
+  // SR radius circles (larger, faint)
+  S.sr.forEach(sr=>{
+    const km=isKigali(sr.lat,sr.lng)?S.kigaliKm:S.ruralKm;
+    const vis=isKigali(sr.lat,sr.lng)?layerVisible.kr:layerVisible.rr;
+    const circle=new google.maps.Circle({
+      center:{lat:sr.lat,lng:sr.lng},
+      radius:km*1200,
+      strokeColor:sr.color,
+      strokeOpacity:0.3,
+      strokeWeight:2,
+      fillColor:sr.color,
+      fillOpacity:0.04,
+      map:vis?gmap:null,
+    });
+    gmObjects.circles['sr_'+sr.id]=circle;
+  });
+}
+
+// Pilot customers
+function renderPilots(){
+  S.pilots.forEach(p=>{
+    const m=new google.maps.Marker({
+      position:{lat:p[0],lng:p[1]},
+      map:layerVisible.pt?gmap:null,
+      icon:pilotSVG(),
+      zIndex:5,
+    });
+    gmObjects.pilotMarkers.push(m);
+  });
+}
+
+// ── LAYER VISIBILITY ──────────────────────────────────────
+function toggleLayer(key){
+  layerVisible[key]=!layerVisible[key];
+  const sw=document.getElementById('tog-'+key);
+  if(sw){sw.classList.toggle('on',layerVisible[key]);sw.classList.toggle('off',!layerVisible[key]);}
+  if(!gmap) return;
+  // Apply to correct objects
+  if(key==='sr') S.sr.forEach(sr=>gmObjects.markers[sr.id]?.setMap(layerVisible.sr?gmap:null));
+  if(key==='jr') S.jr.forEach(jr=>gmObjects.markers[jr.id]?.setMap(layerVisible.jr?gmap:null));
+  if(key==='cl') gmObjects.clusterMarkers.forEach(m=>m.setMap(layerVisible.cl?gmap:null));
+  if(key==='pt') gmObjects.pilotMarkers.forEach(m=>m.setMap(layerVisible.pt?gmap:null));
+  if(key==='sl'){
+    gmObjects.polylines.forEach(p=>p.setMap(layerVisible.sl?gmap:null));
+    if(layerVisible.sl) renderSupplyLines(); // re-render if turning on
+  }
+  if(key==='kr'||key==='rr'){
+    Object.entries(gmObjects.circles).forEach(([id,c])=>{
+      const jr=S.jr.find(j=>j.id===id)||S.sr.find(s=>'sr_'+s.id===id);
+      if(!jr) return;
+      const isK=isKigali(jr.lat,jr.lng);
+      if(isK&&key==='kr') c.setMap(layerVisible.kr?gmap:null);
+      if(!isK&&key==='rr') c.setMap(layerVisible.rr?gmap:null);
+    });
+  }
+}
+
+// ── MAP STYLE ─────────────────────────────────────────────
+function setMapStyle(s){
+  if(!gmap) return;
+  if(s==='dark')      gmap.setOptions({styles:DARK_STYLE,mapTypeId:'roadmap'});
+  if(s==='satellite') gmap.setOptions({styles:[],mapTypeId:'satellite'});
+  if(s==='standard')  gmap.setOptions({styles:STANDARD_STYLE,mapTypeId:'roadmap'});
+}
+
+// ── RADIUS UPDATE ─────────────────────────────────────────
+function updateRadius(type,val){
+  if(type==='kigali'){
+    S.kigaliKm=parseFloat(val);
+    document.getElementById('kigali-badge').textContent=parseFloat(val).toFixed(1)+' km';
+  } else {
+    S.ruralKm=parseFloat(val);
+    document.getElementById('rural-badge').textContent=parseFloat(val).toFixed(1)+' km';
+  }
+  saveState();
+  if(gmap){ // update circles live without full re-render
+    Object.entries(gmObjects.circles).forEach(([id,circle])=>{
+      const jr=S.jr.find(j=>j.id===id);
+      if(!jr) return;
+      const km=isKigali(jr.lat,jr.lng)?S.kigaliKm:S.ruralKm;
+      circle.setRadius(km*1000);
+    });
+  }
+}
+
+// ── FLY TO ────────────────────────────────────────────────
+function gmFly(lat,lng,zoom){
+  if(!gmap){toast('Load Google Maps first','var(--warn)');return;}
+  gmap.panTo({lat,lng});
+  gmap.setZoom(zoom);
+}
+
+// ── PICK MODE ─────────────────────────────────────────────
+function startPickMode(){
+  if(!gmap){toast('Load Google Maps first','var(--warn)');return;}
+  pickMode=true;
+  document.getElementById('pick-hint').style.display='block';
+  gmap.setOptions({draggableCursor:'crosshair'});
+}
+
+// ════════════════════════════════════════════════════════════
+// LOCATION EDITOR (Side Control Panel Section 1)
+// ════════════════════════════════════════════════════════════
+function setLocTab(tab){
+  currentLocTab=tab;
+  document.getElementById('lt-sr').style.borderColor=tab==='sr'?'var(--te)':'';
+  document.getElementById('lt-jr').style.borderColor=tab==='jr'?'var(--te)':'';
+  renderLocList();
+}
+setLocTab('sr');
+
+function renderLocList(){
+  const el=document.getElementById('loc-list');
+  const items=currentLocTab==='sr'?S.sr:S.jr;
+  el.innerHTML=items.map(loc=>{
+    const pct=loc.cap?(loc.stock/loc.cap):null;
+    const col=pct!==null?stockColor(pct):nearestSR(loc.lat,loc.lng).color;
+    return `<div class="loc-item" id="loc-${loc.id}" onclick="focusLocation('${loc.id}','${currentLocTab}')">
+      <div class="loc-dot" style="background:${col};box-shadow:0 0 5px ${col}88;"></div>
+      <div class="loc-info">
+        <div class="loc-name">${loc.name}</div>
+        <div class="loc-meta">${loc.lat.toFixed(4)}, ${loc.lng.toFixed(4)} · <span style="color:${loc.status==='active'?'var(--te)':'var(--danger)'}">${loc.status||'active'}</span></div>
+        ${pct!==null?`<div class="loc-stock-bar"><div class="loc-stock-fill" style="width:${Math.round(pct*100)}%;background:${col};"></div></div>`:''}
+      </div>
+      <div class="loc-actions">
+        <button class="la-btn" onclick="event.stopPropagation();openEditModal('${currentLocTab}','${loc.id}')" title="Edit">✏</button>
+        <button class="la-btn del" onclick="event.stopPropagation();deleteById('${currentLocTab}','${loc.id}')" title="Delete">✕</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function focusLocation(id,type){
+  if(!gmap) return;
+  const item=(type==='sr'?S.sr:S.jr).find(x=>x.id===id);
+  if(!item) return;
+  gmap.panTo({lat:item.lat,lng:item.lng});
+  gmap.setZoom(15);
+  const iw=gmObjects.infoWindows[id];
+  const m=gmObjects.markers[id];
+  if(iw&&m){
+    if(activeInfoWindow) activeInfoWindow.close();
+    iw.open({anchor:m,map:gmap});
+    activeInfoWindow=iw;
+  }
+  // Highlight sidebar row
+  document.querySelectorAll('.loc-item').forEach(el=>el.classList.remove('active-loc'));
+  document.getElementById('loc-'+id)?.classList.add('active-loc');
+}
+
+function addLocation(){
+  const type=document.getElementById('new-type').value;
+  const name=document.getElementById('new-name').value.trim();
+  const lat=parseFloat(document.getElementById('new-lat').value);
+  const lng=parseFloat(document.getElementById('new-lng').value);
+  if(!name){toast('Enter a name','var(--warn)');return;}
+  if(isNaN(lat)||isNaN(lng)){toast('Enter valid coordinates','var(--warn)');return;}
+  const id=type+'_'+Date.now();
+  if(type==='sr'){
+    const col=ZONE_COLORS[S.sr.length%ZONE_COLORS.length];
+    S.sr.push({id,name,lat,lng,stock:500,cap:1000,target:1000,color:col,status:'active'});
+  } else if(type==='jr'){
+    S.jr.push({id,name,lat,lng,status:'active'});
+  } else {
+    S.clusters.push({id,name,n:50,lat,lng});
+  }
+  saveState();
+  renderAllMapObjects();
+  renderLocList();
+  buildShopListSidebar();
+  gmFly(lat,lng,15);
+  ['new-name','new-lat','new-lng'].forEach(i=>document.getElementById(i).value='');
+  toast(`${name} added to map`);
+}
+
+function deleteById(type,id){
+  if(!confirm('Remove this location?')) return;
+  if(type==='sr') S.sr=S.sr.filter(x=>x.id!==id);
+  if(type==='jr') S.jr=S.jr.filter(x=>x.id!==id);
+  saveState(); renderAllMapObjects(); renderLocList(); buildShopListSidebar();
+  toast('Location removed','var(--danger)');
+}
+
+// ════════════════════════════════════════════════════════════
+// EDIT MODAL
+// ════════════════════════════════════════════════════════════
+function openEditModal(type,id){
+  const item=(type==='sr'?S.sr:S.jr).find(x=>x.id===id);
+  if(!item) return;
+  editTarget={type,id};
+  document.getElementById('em-id').value=id;
+  document.getElementById('em-type').value=type;
+  document.getElementById('em-name').value=item.name;
+  document.getElementById('em-lat').value=item.lat;
+  document.getElementById('em-lng').value=item.lng;
+  document.getElementById('em-status').value=item.status||'active';
+  const sg=document.getElementById('em-stock-group');
+  if(type==='sr'){
+    sg.style.display='';
+    document.getElementById('em-stock').value=item.stock;
+    document.getElementById('em-cap').textContent=item.cap+' cyl';
+  } else { sg.style.display='none'; }
+  if(activeInfoWindow) activeInfoWindow.close();
+  document.getElementById('edit-modal').classList.add('open');
+}
+
+function saveEdit(){
+  if(!editTarget) return;
+  const {type,id}=editTarget;
+  const item=(type==='sr'?S.sr:S.jr).find(x=>x.id===id);
+  if(!item) return;
+  item.name=document.getElementById('em-name').value.trim()||item.name;
+  item.lat=parseFloat(document.getElementById('em-lat').value)||item.lat;
+  item.lng=parseFloat(document.getElementById('em-lng').value)||item.lng;
+  item.status=document.getElementById('em-status').value;
+  if(type==='sr'){
+    const v=parseInt(document.getElementById('em-stock').value);
+    if(!isNaN(v)) item.stock=Math.max(0,Math.min(item.cap,v));
+  }
+  closeEditModal();
+  saveState();
+  renderAllMapObjects(); // instant map refresh
+  renderLocList();
+  buildShopListSidebar();
+  renderStockManagerList();
+  toast(`${item.name} updated — map refreshed instantly`);
+}
+
+function deleteLocation(){
+  if(!editTarget) return;
+  deleteById(editTarget.type,editTarget.id);
+  closeEditModal();
+}
+
+function closeEditModal(e){
+  if(e&&e.target!==document.getElementById('edit-modal')) return;
+  document.getElementById('edit-modal').classList.remove('open');
+  editTarget=null;
+}
+
+// ════════════════════════════════════════════════════════════
+// STOCK MANAGER (Section 2 of control panel)
+// ════════════════════════════════════════════════════════════
+function renderStockManagerList(){
+  const el=document.getElementById('stock-manager-list');
+  el.innerHTML=S.sr.map(sr=>{
+    const pct=sr.stock/sr.cap;
+    const col=stockColor(pct);
+    return `<div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px;margin-bottom:6px;">
+      <div style="display:flex;align-items:center;gap:7px;margin-bottom:7px;">
+        <div style="width:9px;height:9px;border-radius:50%;background:${col};box-shadow:0 0 6px ${col}aa;flex-shrink:0;"></div>
+        <div style="font-size:12px;font-weight:700;flex:1;">${sr.name}</div>
+        <div style="font-size:10px;font-family:var(--mono);font-weight:700;color:${col};">${Math.round(pct*100)}%</div>
+      </div>
+      <div style="height:4px;background:var(--bg4);border-radius:2px;overflow:hidden;margin-bottom:8px;">
+        <div style="width:${Math.round(pct*100)}%;height:100%;background:${col};border-radius:2px;transition:width .4s;"></div>
+      </div>
+      <div class="stock-edit-row">
+        <label>${sr.stock} / ${sr.cap}</label>
+        <input class="stock-num" id="sm-${sr.id}" type="number" value="${sr.stock}" min="0" max="${sr.cap}" oninput="liveStockUpdate('${sr.id}',this.value)">
+        <button onclick="applyStock('${sr.id}')" style="background:var(--te);color:#000;border:none;border-radius:5px;padding:5px 9px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;">Set →</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+renderStockManagerList();
+
+// Live preview: update marker color as user types (without saving)
+function liveStockUpdate(id,val){
+  if(!gmap) return;
+  const v=parseInt(val); if(isNaN(v)) return;
+  const sr=S.sr.find(s=>s.id===id); if(!sr) return;
+  const pct=Math.max(0,Math.min(sr.cap,v))/sr.cap;
+  const col=stockColor(pct);
+  const m=gmObjects.markers[id];
+  if(m) m.setIcon(markerSVG(col,'SR',44));
+}
+
+// Confirm stock update → save to state → full sync
+function applyStock(id){
+  const inp=document.getElementById('sm-'+id);
+  if(!inp) return;
+  const v=parseInt(inp.value);
+  const sr=S.sr.find(s=>s.id===id); if(!sr||isNaN(v)) return;
+  sr.stock=Math.max(0,Math.min(sr.cap,v));
+  saveState();         // → syncAllPages() → updates Stock page, Insights, etc.
+  renderAllMapObjects(); // → marker color updates immediately on map
+  renderStockManagerList();
+  buildShopListSidebar();
+  toast(`${sr.name} stock set to ${sr.stock} — map updated instantly`);
+}
+
+// ════════════════════════════════════════════════════════════
+// SIDEBAR + NAV SYNC
+// ════════════════════════════════════════════════════════════
+function buildShopListSidebar(){
+  const sl=document.getElementById('shop-list');
+  sl.innerHTML=S.sr.map(sr=>{
+    const pct=sr.stock/sr.cap;
+    const col=stockColor(pct);
+    const jrsA=S.jr.filter(j=>nearestSR(j.lat,j.lng).id===sr.id);
+    return `<div class="shop-item" onclick="focusLocation('${sr.id}','sr')">
+      <div class="shop-dot" style="background:${col};box-shadow:0 0 5px ${col}88;"></div>
+      <div style="flex:1;min-width:0;">
+        <div class="shop-name">${sr.name}</div>
+        <div class="shop-meta">${jrsA.length} JR · ${sr.stock}/${sr.cap} cyl</div>
+        <div class="shop-stock-bar"><div class="shop-stock-fill" style="width:${Math.round(pct*100)}%;background:${col};"></div></div>
+      </div>
+      <div style="font-size:10px;font-family:var(--mono);color:${col};font-weight:700;">${Math.round(pct*100)}%</div>
+    </div>`;
+  }).join('');
+}
+buildShopListSidebar();
+
+function updateNavStats(){
+  const tc=S.clusters.reduce((s,c)=>s+c.n,0);
+  document.getElementById('sb-cust').textContent=tc.toLocaleString();
+  document.getElementById('sb-sr').textContent=S.sr.length;
+  document.getElementById('sb-jr').textContent=S.jr.length;
+  document.getElementById('sb-stock').textContent=totalStock().toLocaleString();
+}
+updateNavStats();
+
+// ════════════════════════════════════════════════════════════
+// PAGE ROUTING (unchanged logic)
+// ════════════════════════════════════════════════════════════
+let currentPage='map';
+function goPage(name){
+  currentPage=name;
+  document.querySelectorAll('.ntab').forEach((t,i)=>{
+    t.classList.toggle('active',['map','stock','sales','retailers','insights','settings'][i]===name);
+  });
+  const mapEl=document.getElementById('map-chamber');
+  ['stock','sales','retailers','insights','settings'].forEach(p=>{
+    document.getElementById(p+'-page').style.display='none';
+  });
+  if(name==='map'){
+    mapEl.style.display='flex';
+    if(gmap) setTimeout(()=>google.maps.event.trigger(gmap,'resize'),50);
+  } else {
+    mapEl.style.display='none';
+    document.getElementById(name+'-page').style.display='block';
+    renderPage(name);
+  }
+}
+
+function renderPage(name){
+  if(name==='stock')     renderStock();
+  if(name==='sales')     renderSales();
+  if(name==='retailers') renderRetailers('all');
+  if(name==='insights')  renderInsights();
+  if(name==='settings')  renderSettings();
+}
+
+function syncAllPages(){
+  updateNavStats();
+  buildShopListSidebar();
+  renderLocList();
+  renderStockManagerList();
+  if(currentPage!=='map') renderPage(currentPage);
+}
+
+// ════════════════════════════════════════════════════════════
+// STOCK PAGE (unchanged, inline edit → map sync)
+// ════════════════════════════════════════════════════════════
+function renderStock(){
+  const g=document.getElementById('stock-grid');
+  g.innerHTML=S.sr.map(s=>{
+    const pct=s.stock/s.cap; const tp=s.target/s.cap;
+    const col=stockColor(pct);
+    return `<div class="stock-card">
+      <div class="sc-top">
+        <div><div style="width:10px;height:10px;border-radius:50%;background:${s.color};display:inline-block;margin-right:6px;"></div><span class="sc-name">${s.name}</span></div>
+        <span class="sc-pct" style="color:${col};">${Math.round(pct*100)}%</span>
+      </div>
+      <div style="font-size:11px;color:var(--muted);">Current stock</div>
+      <div class="sc-bar"><div class="sc-bar-fill" style="width:${Math.round(pct*100)}%;background:${col};"></div></div>
+      <div class="sc-nums">
+        <span contenteditable="true" class="sc-editable" onblur="editStockInline(this,'${s.id}')">${s.stock}</span>
+        <span style="color:var(--muted);">/ ${s.cap} cyl</span>
+      </div>
+      <div style="font-size:10px;color:var(--muted);margin-top:8px;">Target (Sept 2026)</div>
+      <div class="sc-bar" style="margin-top:4px;"><div class="sc-bar-fill" style="width:${Math.round(tp*100)}%;background:rgba(255,255,255,0.15);"></div></div>
+      <div class="sc-nums"><span style="color:var(--muted);">${s.target} cyl target</span></div>
+    </div>`;
+  }).join('');
+}
+function editStockInline(el,id){
+  const val=parseInt(el.textContent);
+  const s=S.sr.find(x=>x.id===id); if(!s||isNaN(val)) return;
+  s.stock=Math.max(0,Math.min(s.cap,val));
+  el.textContent=s.stock;
+  saveState(); renderAllMapObjects(); renderStockManagerList();
+  toast(`${s.name} → ${s.stock} cyl · Map updated`);
+}
+
+// ════════════════════════════════════════════════════════════
+// SALES PAGE
+// ════════════════════════════════════════════════════════════
+function renderSales(){
+  const RWF=2500;
+  document.getElementById('dist-grid').innerHTML=SALES.map(d=>`
+    <div class="dist-card">
+      <div class="dist-name">${d.d}</div>
+      <div style="font-size:10px;color:var(--muted);margin-bottom:6px;font-family:var(--mono);">${d.cust.toLocaleString()} customers</div>
+      <div class="dist-rev">${(d.cyl*RWF).toLocaleString()}</div>
+      <div style="font-size:10px;color:var(--muted);">RWF · +${d.growth}%</div>
+    </div>`).join('');
+  const maxC=Math.max(...SALES.map(d=>d.cyl));
+  document.getElementById('sales-bar').innerHTML=SALES.map(d=>`
+    <div class="bc-wrap">
+      <div style="font-size:9px;color:var(--muted);font-family:var(--mono);">${(d.cyl/1000).toFixed(1)}k</div>
+      <div class="bc-bar" style="height:${Math.round(d.cyl/maxC*90)}%;background:linear-gradient(180deg,var(--te),#05a057);"></div>
+      <div class="bc-lbl">${d.d.substring(0,5)}</div>
+    </div>`).join('');
+  document.getElementById('sales-table').innerHTML=`
+    <thead><tr><th>District</th><th>Customers</th><th>Cyl/mo</th><th>Revenue (RWF)</th><th>Avg/cust</th><th>Growth</th></tr></thead>
+    <tbody>${SALES.map((d,i)=>`<tr>
+      <td>${d.d}</td>
+      <td contenteditable="true" onblur="editSales(${i},'cust',this)">${d.cust.toLocaleString()}</td>
+      <td contenteditable="true" onblur="editSales(${i},'cyl',this)">${d.cyl.toLocaleString()}</td>
+      <td style="color:var(--te);font-family:var(--mono);">${(d.cyl*RWF).toLocaleString()}</td>
+      <td style="font-family:var(--mono);">${Math.round(d.cyl*RWF/d.cust).toLocaleString()}</td>
+      <td style="color:${d.growth>8?'var(--te)':'var(--warn)'};">+${d.growth}%</td>
+    </tr>`).join('')}</tbody>`;
+}
+function editSales(i,field,el){
+  const val=parseInt(el.textContent.replace(/,/g,''));
+  if(isNaN(val)) return;
+  SALES[i][field]=val; el.textContent=val.toLocaleString();
+  saveSales(); renderSales();
+}
+
+// ════════════════════════════════════════════════════════════
+// RETAILERS PAGE
+// ════════════════════════════════════════════════════════════
+function filterRet(f){
+  ['all','sr','jr'].forEach(k=>document.getElementById('rf-'+k)?.style&&(document.getElementById('rf-'+k).style.borderColor=k===f?'var(--te)':''));
+  renderRetailers(f);
+}
+function renderRetailers(f='all'){
+  let items=[];
+  if(f!=='jr') S.sr.forEach(s=>{
+    const pct=s.stock/s.cap;const col=stockColor(pct);
+    const jrsA=S.jr.filter(j=>nearestSR(j.lat,j.lng).id===s.id);
+    items.push(`<div class="ret-card" onclick="goPage('map');focusLocation('${s.id}','sr')">
+      <div class="ret-type" style="color:${s.color};">Senior Retailer</div>
+      <div class="ret-name">${s.name}</div>
+      <div style="display:flex;gap:5px;margin-bottom:8px;">
+        <span style="font-size:9px;font-weight:700;padding:2px 7px;border-radius:4px;background:rgba(255,255,255,.07);">SR</span>
+        <span style="font-size:9px;font-weight:700;padding:2px 7px;border-radius:4px;background:${col}22;color:${col};">${Math.round(pct*100)}%</span>
+        <span style="font-size:9px;font-weight:700;padding:2px 7px;border-radius:4px;background:${s.status==='active'?'rgba(6,193,103,.12)':'rgba(239,68,68,.12)'};color:${s.status==='active'?'var(--te)':'var(--danger)'};">${s.status||'active'}</span>
+      </div>
+      <div style="font-size:11px;color:var(--muted);padding:4px 0;border-bottom:1px solid var(--border);">JRs: <b style="color:white;">${jrsA.length}</b></div>
+      <div style="font-size:11px;color:var(--muted);padding:4px 0;">Stock: <b style="color:white;font-family:var(--mono);">${s.stock}/${s.cap}</b></div>
+    </div>`);
+  });
+  if(f!=='sr') S.jr.forEach(j=>{
+    const sr=nearestSR(j.lat,j.lng);
+    items.push(`<div class="ret-card" onclick="goPage('map');focusLocation('${j.id}','jr')">
+      <div class="ret-type" style="color:${sr.color};">Junior Retailer</div>
+      <div class="ret-name">${j.name}</div>
+      <div style="display:flex;gap:5px;margin-bottom:8px;">
+        <span style="font-size:9px;font-weight:700;padding:2px 7px;border-radius:4px;background:rgba(255,255,255,.07);">JR</span>
+        <span style="font-size:9px;font-weight:700;padding:2px 7px;border-radius:4px;background:${j.status==='active'?'rgba(6,193,103,.12)':'rgba(239,68,68,.12)'};color:${j.status==='active'?'var(--te)':'var(--danger)'};">${j.status||'active'}</span>
+      </div>
+      <div style="font-size:11px;color:var(--muted);padding:4px 0;border-bottom:1px solid var(--border);">Parent: <b style="color:white;">${sr.name.replace(' Shop','')}</b></div>
+      <div style="font-size:11px;color:var(--muted);padding:4px 0;">Type: <b style="color:white;">${isKigali(j.lat,j.lng)?'Kigali':'Rural'}</b></div>
+    </div>`);
+  });
+  document.getElementById('ret-grid').innerHTML=items.join('');
+}
+
+// ════════════════════════════════════════════════════════════
+// INSIGHTS
+// ════════════════════════════════════════════════════════════
+function renderInsights(){
+  const underserved=S.clusters.filter(c=>{
+    if(c.n<50) return false;
+    return S.jr.every(j=>Math.hypot((j.lat-c.lat)*111,(j.lng-c.lng)*111*Math.cos(c.lat*Math.PI/180))>5);
+  });
+  const reorder=S.sr.filter(s=>s.stock/s.cap<0.5);
+  const tc=S.clusters.reduce((s,c)=>s+c.n,0);
+  const avgJR=Math.round(tc/S.jr.length);
+  const cov=Math.round((1-underserved.length/Math.max(1,S.clusters.filter(c=>c.n>=50).length))*100);
+  document.getElementById('kpi-grid').innerHTML=[
+    {val:cov+'%',lbl:'Coverage',col:'var(--te)'},
+    {val:avgJR,lbl:'Avg/JR',col:'#a3e635'},
+    {val:underserved.length,lbl:'Underserved',col:'var(--warn)'},
+    {val:reorder.length,lbl:'Need reorder',col:'var(--danger)'},
+  ].map(k=>`<div class="kpi-card"><div class="kpi-val" style="color:${k.col};">${k.val}</div><div class="kpi-lbl">${k.lbl}</div></div>`).join('');
+  const items=[];
+  S.sr.forEach(s=>{
+    const p=s.stock/s.cap;
+    if(p<0.3) items.push({col:'var(--danger)',type:'🔴 Critical Stock',text:`${s.name}: ${Math.round(p*100)}% (${s.stock}/${s.cap} cyl). Immediate resupply from TotalEnergies.`});
+    else if(p<0.5) items.push({col:'var(--warn)',type:'⚠️ Low Stock',text:`${s.name}: ${Math.round(p*100)}%. Schedule resupply within 7 days.`});
+  });
+  underserved.forEach(c=>items.push({col:'var(--warn)',type:'📍 Underserved',text:`${c.name}: ${c.n} customers, no JR within 5km.`}));
+  S.jr.forEach((a,i)=>S.jr.slice(i+1).forEach(b=>{
+    const d=Math.hypot((a.lat-b.lat)*111,(a.lng-b.lng)*111*Math.cos(a.lat*Math.PI/180));
+    if(d<2.5) items.push({col:'var(--blue)',type:'⚖️ Overlap',text:`${a.name} & ${b.name} are ${d.toFixed(1)}km apart.`});
+  }));
+  items.push({col:'var(--te)',type:'💡 Expansion',text:'Bumbogo (678 customers) — add JR at -1.888, 30.138.'});
+  items.push({col:'var(--te)',type:'💡 Expansion',text:'Gahanga (615 customers) — second JR at -2.022, 30.107.'});
+  document.getElementById('ins-list').innerHTML=items.slice(0,10).map(it=>
+    `<div class="ins-card" style="border-left-color:${it.col};"><div class="ins-type" style="color:${it.col};">${it.type}</div><div class="ins-text">${it.text}</div></div>`
+  ).join('');
+}
+
+// ════════════════════════════════════════════════════════════
+// SETTINGS
+// ════════════════════════════════════════════════════════════
+function renderSettings(){
+  const stockS=S.sr.reduce((s,x)=>s+(x.stock/x.cap),0)/S.sr.length*40;
+  const jrS=Math.min(S.jr.length/20,1)*30;
+  const total=Math.round(stockS+jrS+30);
+  const col=total>75?'var(--te)':total>50?'var(--warn)':'var(--danger)';
+  document.getElementById('health-score').innerHTML=`<span style="color:${col};">${total}</span><span style="font-size:14px;color:var(--muted);">/100</span>`;
+  document.getElementById('health-detail').textContent=total>75?'Network is healthy':'Review Insights tab';
+}
+function addJR(){
+  const n=document.getElementById('s-name').value.trim();
+  const lat=parseFloat(document.getElementById('s-lat').value);
+  const lng=parseFloat(document.getElementById('s-lng').value);
+  if(!n||isNaN(lat)||isNaN(lng)){toast('Fill all fields','var(--warn)');return;}
+  S.jr.push({id:'jr_'+Date.now(),name:n,lat,lng,status:'active'});
+  saveState(); renderAllMapObjects();
+  toast(`${n} added`);
+}
+function importCSV(){
+  const type=document.getElementById('imp-type').value;
+  const raw=document.getElementById('imp-csv').value.trim();
+  if(!raw) return;
+  let added=0;
+  raw.split('\n').forEach(line=>{
+    const p=line.split(',').map(x=>x.trim());
+    if(p.length<3) return;
+    const lat=parseFloat(p[1]),lng=parseFloat(p[2]);
+    if(isNaN(lat)||isNaN(lng)) return;
+    if(type==='jr') S.jr.push({id:'jr_'+Date.now()+'_'+Math.random(),name:p[0],lat,lng,status:'active'});
+    else S.sr.push({id:'sr_'+Date.now()+'_'+Math.random(),name:p[0],lat,lng,stock:500,cap:1000,target:1000,color:ZONE_COLORS[S.sr.length%ZONE_COLORS.length],status:'active'});
+    added++;
+  });
+  saveState(); renderAllMapObjects();
+  toast(`Imported ${added} locations`);
+  document.getElementById('imp-csv').value='';
+}
+function exportCSV(type){
+  let rows,fn;
+  if(type==='jr'){rows=[['Name','Lat','Lng','Status'],...S.jr.map(j=>[j.name,j.lat,j.lng,j.status||'active'])];fn='jr.csv';}
+  else if(type==='sr'){rows=[['Name','Lat','Lng','Stock','Capacity','Status'],...S.sr.map(s=>[s.name,s.lat,s.lng,s.stock,s.cap,s.status||'active'])];fn='sr.csv';}
+  else{rows=[['Name','Customers','Lat','Lng'],...S.clusters.map(c=>[c.name,c.n,c.lat,c.lng])];fn='clusters.csv';}
+  const a=document.createElement('a');
+  a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(rows.map(r=>r.join(',')).join('\n'));
+  a.download=fn;a.click();
+}
+function resetData(){
+  if(!confirm('Reset everything?')) return;
+  S=JSON.parse(JSON.stringify(DEFAULT));
+  saveState(); renderAllMapObjects(); renderStockManagerList(); buildShopListSidebar();
+  toast('Reset complete');
+}
+</script>
+</body>
+</html>
